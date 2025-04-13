@@ -34,10 +34,10 @@ shell: ## Enter application dev container
 
 .PHONY: go-build
 go-build: ## Build dev application (go build)
-	@$(DC) exec application sh -c "go mod tidy"
+#    @$(DC) exec application sh -c "go mod tidy"
 #    @$(DC) exec sh -c "env CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags '-X main.env=dev' -o bin/app ./"
 	@$(DC) exec application sh -c "env CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o bin/app ./"
 
 .PHONY: clean
 clean: ## Clean bin/
-	@$(DC) exec application sh - c "rm -rf bin/app"
+	@$(DC) exec application sh -c "rm -rf bin/app"

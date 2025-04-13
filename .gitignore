@@ -1,5 +1,3 @@
 /bin/*
 /.vscode
-/go.mod
-/go.sum
 !/**/.gitkeep
