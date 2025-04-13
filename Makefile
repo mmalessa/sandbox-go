@@ -1,14 +1,3 @@
-APP_NAME = gotemplate
-APP_HOME = github.com/githubuser/$(APP_NAME)
-
-BASE_GO_IMAGE = golang:1.17.6-alpine3.15
-BASE_TARGET_IMAGE = alpine:3.15
-
-IMAGE_DEV = $(APP_NAME)-dev
-
-DOCKERFILE_DEV = .docker/dev/Dockerfile
-
-
 CGO_ENABLED = 0 # statically linked = 0
 TARGETOS=linux
 ifeq ($(OS),Windows_NT) 
@@ -21,50 +10,34 @@ TARGETARCH = amd64
 .DEFAULT_GOAL = help
 PID = /tmp/serving.pid
 DEVELOPER_UID     ?= $(shell id -u)
-#-----------------------------------------------------------------------------------------------------------------------
-ARG := $(word 2, $(MAKECMDGOALS))
-%:
-	@:
-#-----------------------------------------------------------------------------------------------------------------------
+DC = docker compose
 #-----------------------------------------------------------------------------------------------------------------------
 
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z0-9_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 
-build: build-image ## Alias for 'build-image'
-
-build-image: ## Build dev image
-	@docker build 											\
-	    -t $(IMAGE_DEV)										\
-		--build-arg BASE_GO_IMAGE=$(BASE_GO_IMAGE)			\
-		--build-arg DEVELOPER_UID=$(DEVELOPER_UID)			\
-		--build-arg APP_HOME=$(APP_HOME)					\
-		-f $(DOCKERFILE_DEV)								\
-		.
+.PHONY: build
+build: ## Build dev image
+	@$(DC) build 											\
+	
+.PHONY: up
 up: ## Start application dev container
-	@cd .docker && \
-	COMPOSE_PROJECT_NAME=$(APP_NAME) \
-	IMAGE_DEV=$(IMAGE_DEV) \
-	APP_NAME=$(APP_NAME) \
-	APP_HOME=$(APP_HOME) \
-	docker-compose up -d
+	@$(DC) up -d
 
+.PHONY: down
 down: ## Remove application dev container
-	@cd .docker && \
-	COMPOSE_PROJECT_NAME=$(APP_NAME) \
-	IMAGE_DEV=$(IMAGE_DEV) \
-	APP_NAME=$(APP_NAME) \
-	APP_HOME=$(APP_HOME) \
-	docker-compose down
+	@$(DC) down
 
-console: ## Enter application dev container
-	@docker exec -it $(APP_NAME)-dev bash
+.PHONY: shell
+shell: ## Enter application dev container
+	@$(DC) exec -it application bash
 
-go: go-build ## Alias for 'go-build'
+.PHONY: go-build
+go-build: ## Build dev application (go build)
+	@$(DC) exec application sh -c "go mod tidy"
+#    @$(DC) exec sh -c "env CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags '-X main.env=dev' -o bin/app ./"
+	@$(DC) exec application sh -c "env CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o bin/app ./"
 
-go-build: ## Build dev application (go build)	
-	@go mod tidy
-	@env CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-X main.env=dev" -o bin/${APP_NAME} ./
-
+.PHONY: clean
 clean: ## Clean bin/
-	@rm -rf bin/${APP_NAME}
+	@$(DC) exec application sh - c "rm -rf bin/app"

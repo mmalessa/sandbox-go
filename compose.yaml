@@ -1,0 +1,21 @@
+services:
+  application:
+    build:
+      context: .
+      target: dev
+      args:
+        DEVELOPER_UID: 1000
+    restart: on-failure
+    volumes:
+      - ./:/go/src/app
+      - gopkg:/go/pkg/
+      - gobin:/go/bin/
+    tty: true
+    networks:
+      application:
+
+volumes:
+  gopkg:
+  gobin:
+networks:
+  application:
